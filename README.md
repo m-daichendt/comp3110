@@ -14,3 +14,8 @@ Computer Architecture II Project
 
 Next steps (not yet done):
 - Calibrate the mapping algorithm on larger failing cases (e.g., ASTResolving, PluginSearchScope) per the LHDiff approach outlined in the provided slides.
+
+## Validation Snapshot
+
+- Latest run: `python validate_mappings.py` (see `validate_results.txt`)
+- Status: failing with many mismatches; BaseTypes/asdf align but numerous larger cases (e.g., ASTResolving, PluginSearchScope) still differ from expected mappings.
