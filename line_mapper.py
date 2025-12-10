@@ -26,26 +26,38 @@ class LineMapper:
         """Store the sequences that will be diffed to derive line mappings."""
         self.old_lines = list(old_lines)
         self.new_lines = list(new_lines)
+        # Normalized copies used for similarity/diff decisions.
+        self._norm_old = [self._normalize(l) for l in self.old_lines]
+        self._norm_new = [self._normalize(l) for l in self.new_lines]
+
+    @staticmethod
+    def _normalize(line: str) -> str:
+        """Lightweight normalization: lowercase and collapse whitespace."""
+        return " ".join(line.lower().split())
 
     def map_lines(self) -> List[LineMapping]:
         """Return a list of line correspondences derived from difflib opcodes."""
-        sm = difflib.SequenceMatcher(a=self.old_lines, b=self.new_lines, autojunk=False)
+        sm = difflib.SequenceMatcher(a=self._norm_old, b=self._norm_new, autojunk=False)
         mappings: List[LineMapping] = []
         for tag, i1, i2, j1, j2 in sm.get_opcodes():
             if tag == "equal":
                 for k in range(i2 - i1):
                     mappings.append(LineMapping(old_line=i1 + k + 1, new_line=j1 + k + 1))
             elif tag == "replace":
-                old_len = i2 - i1
-                new_len = j2 - j1
-                paired = min(old_len, new_len)
-                # For replacements, pair lines positionally; remainder become deletes/inserts.
-                for k in range(paired):
-                    mappings.append(LineMapping(old_line=i1 + k + 1, new_line=j1 + k + 1))
-                for k in range(paired, old_len):
-                    mappings.append(LineMapping(old_line=i1 + k + 1, new_line=None))
-                for k in range(paired, new_len):
-                    mappings.append(LineMapping(old_line=None, new_line=j1 + k + 1))
+                # Use similarity to pair lines in replace blocks; unmatched are delete/insert.
+                pairings = self._greedy_pair(i1, i2, j1, j2)
+                mapped_old = set()
+                mapped_new = set()
+                for oi, nj in pairings:
+                    mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+                    mapped_old.add(oi)
+                    mapped_new.add(nj)
+                for oi in range(i1, i2):
+                    if oi not in mapped_old:
+                        mappings.append(LineMapping(old_line=oi + 1, new_line=None))
+                for nj in range(j1, j2):
+                    if nj not in mapped_new:
+                        mappings.append(LineMapping(old_line=None, new_line=nj + 1))
             elif tag == "delete":
                 for k in range(i1, i2):
                     mappings.append(LineMapping(old_line=k + 1, new_line=None))
@@ -55,6 +67,28 @@ class LineMapper:
             else:  # pragma: no cover
                 raise ValueError(f"Unexpected tag: {tag}")
         return mappings
+
+    def _greedy_pair(self, i1: int, i2: int, j1: int, j2: int) -> List[tuple[int, int]]:
+        """Pair lines in replace blocks using similarity, highest first."""
+        pairs: List[tuple[int, int, float]] = []
+        for oi in range(i1, i2):
+            for nj in range(j1, j2):
+                score = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
+                pairs.append((oi, nj, score))
+        # Sort by descending score
+        pairs.sort(key=lambda x: x[2], reverse=True)
+        used_old = set()
+        used_new = set()
+        chosen: List[tuple[int, int]] = []
+        for oi, nj, score in pairs:
+            if score < 0.4:  # ignore weak matches
+                break
+            if oi in used_old or nj in used_new:
+                continue
+            used_old.add(oi)
+            used_new.add(nj)
+            chosen.append((oi, nj))
+        return chosen
 
     def pretty_mapping(self) -> str:
         """Human-readable mapping like `4 -> 6` with `-` for inserts/deletes."""
