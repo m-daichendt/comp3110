@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import math
+import re
+from collections import Counter
 from dataclasses import dataclass
 from typing import Iterable, List, Sequence
 
@@ -36,6 +39,25 @@ class LineMapper:
     def _normalize(line: str) -> str:
         """Lightweight normalization: lowercase and collapse whitespace."""
         return " ".join(line.lower().split())
+
+    @staticmethod
+    def _tokens(text: str) -> List[str]:
+        """Simple alphanumeric tokenization."""
+        return re.findall(r"[a-zA-Z0-9_]+", text.lower())
+
+    @staticmethod
+    def _tf_cosine(t1: Counter, t2: Counter) -> float:
+        """Cosine similarity between two token frequency counters."""
+        if not t1 or not t2:
+            return 0.0
+        dot = sum(t1[k] * t2.get(k, 0) for k in t1)
+        if dot == 0:
+            return 0.0
+        norm1 = math.sqrt(sum(v * v for v in t1.values()))
+        norm2 = math.sqrt(sum(v * v for v in t2.values()))
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+        return dot / (norm1 * norm2)
 
     @staticmethod
     def _simhash(text: str) -> int:
@@ -76,6 +98,16 @@ class LineMapper:
                     matched_old.add(oi)
                     matched_new.add(nj)
 
+        # Precompute token counters and context strings.
+        old_tokens = [Counter(self._tokens(t)) for t in self._norm_old]
+        new_tokens = [Counter(self._tokens(t)) for t in self._norm_new]
+
+        def ctx_string(norm_lines: List[str], idx: int) -> str:
+            return " ".join(norm_lines[max(0, idx - 4): min(len(norm_lines), idx + 5)])
+
+        old_ctx_tokens = [Counter(self._tokens(ctx_string(self._norm_old, i))) for i in range(len(self._norm_old))]
+        new_ctx_tokens = [Counter(self._tokens(ctx_string(self._norm_new, j))) for j in range(len(self._norm_new))]
+
         # Step 2: build candidate mappings for all unmatched lines using simhash pruning.
         proposals: List[tuple[float, int, int]] = []
         old_hashes = [self._simhash(line) for line in self._norm_old]
@@ -85,20 +117,24 @@ class LineMapper:
         unmatched_new = [j for j in range(len(self._norm_new)) if j not in matched_new]
 
         for oi in unmatched_old:
-            # pick top-15 nearest neighbors by hamming distance
+            # pick top-15 nearest neighbors by combined simhash distance (content + context)
             candidates = sorted(
-                ((self._hamming(old_hashes[oi], new_hashes[nj]), nj) for nj in unmatched_new),
-                key=lambda x: x[0],
+                (
+                    self._hamming(old_hashes[oi], new_hashes[nj])
+                    + self._hamming(self._simhash(" ".join(old_tokens[oi])), self._simhash(" ".join(new_tokens[nj]))),
+                    nj,
+                )
+                for nj in unmatched_new
             )[:15]
             scored: List[tuple[float, int]] = []
             for _, nj in candidates:
-                content_sim = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
-                context_sim = self._context_similarity(oi, nj)
+                content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
+                context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
                 combined = 0.6 * content_sim + 0.4 * context_sim
                 scored.append((combined, nj))
             scored.sort(key=lambda x: x[0], reverse=True)
             for combined, nj in scored:
-                if combined >= 0.2:
+                if combined >= 0.5:
                     proposals.append((combined, oi, nj))
 
         # Step 3: resolve conflicts by highest score first.
@@ -125,6 +161,7 @@ class LineMapper:
 
     def _context_similarity(self, oi: int, nj: int) -> float:
         """Compute a rough context similarity using adjacent normalized lines."""
+        # Deprecated in favor of token-based cosine; retained for compatibility.
         old_ctx = " ".join(self._norm_old[max(0, oi - 4): min(len(self._norm_old), oi + 5)])
         new_ctx = " ".join(self._norm_new[max(0, nj - 4): min(len(self._norm_new), nj + 5)])
         if not old_ctx or not new_ctx:
