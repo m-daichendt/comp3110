@@ -72,16 +72,24 @@ def main(argv: List[str] | None = None) -> int:
     data = json.loads(Path(args.json_path).read_text(encoding="utf-8"))
 
     all_failures: List[str] = []
+    total_cases = 0
+    failed_cases = 0
     for test in data:
-        all_failures.extend(validate_test_case(test))
+        total_cases += 1
+        failures = validate_test_case(test)
+        if failures:
+            failed_cases += 1
+            all_failures.extend(failures)
 
     if all_failures:
         print("FAILED:")
         for failure in all_failures:
             print(f" - {failure}")
+        success_cases = total_cases - failed_cases
+        print(f"\nSummary: {success_cases}/{total_cases} cases passed; {failed_cases} failed.")
         return 1
 
-    print(f"All {len(data)} test cases passed.")
+    print(f"All {total_cases} test cases passed.")
     return 0
 
 
