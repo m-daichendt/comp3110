@@ -25,3 +25,10 @@ Next steps (not yet done):
 ## New Dataset Tooling
 - `generate_dataset.py`: build a 25-pair dataset (target ~500 mapped lines) from local files (default glob **/*.java) using the current LineMapper. Outputs `new_dataset.json`.
 - `validate_new_dataset.py`: validate `new_dataset.json` against the current LineMapper to spot regressions.
+
+## Running dataset generation against a GitHub repo
+- Example (popular repo Flask):
+  - `python generate_dataset.py --repo-url https://github.com/pallets/flask.git --glob "**/*.py" --pairs 25 --target-lines 500`
+  - This clones the repo to a temp dir, samples 25 file pairs (Python files), caps total mapped lines at 500, and writes `new_dataset.json`.
+  - After generation, run `python validate_new_dataset.py --dataset new_dataset.json` to validate against the current mapper.
+- Notes: requires network access and git available locally; the temporary clone is auto-cleaned.
