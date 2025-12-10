@@ -121,12 +121,13 @@ class LineMapper:
                 block_old = list(range(i1, i2))
                 block_new = list(range(j1, j2))
                 sim_matrix: List[List[float]] = []
-                for oi in block_old:
+                for oi_idx, oi in enumerate(block_old):
                     row = []
-                    for nj in block_new:
+                    for nj_idx, nj in enumerate(block_new):
                         content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
                         context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
-                        row.append(0.6 * content_sim + 0.4 * context_sim)
+                        pos_bonus = 0.1 if abs(oi_idx - nj_idx) <= 1 else 0.0
+                        row.append(0.6 * content_sim + 0.4 * context_sim + pos_bonus)
                     sim_matrix.append(row)
 
                 assignment = self._max_assignment(sim_matrix)
@@ -134,7 +135,7 @@ class LineMapper:
                 used_new = set()
                 for oi_idx, nj_idx in assignment:
                     score = sim_matrix[oi_idx][nj_idx]
-                    if score < 0.2:
+                    if score < 0.05:
                         continue
                     oi = block_old[oi_idx]
                     nj = block_new[nj_idx]
