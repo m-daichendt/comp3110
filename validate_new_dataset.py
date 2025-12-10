@@ -62,13 +62,18 @@ def validate(dataset_path: Path) -> tuple[int, int, List[str]]:
 def main(argv: Iterable[str] | None = None) -> int:
     args = parse_args(argv)
     passed, failed, failures = validate(args.dataset)
+    output_lines: List[str] = []
     if failures:
-        print("FAILED:")
+        output_lines.append("FAILED:")
         for f in failures:
-            print(f" - {f}")
-        print(f"\nSummary: {passed + failed} pairs validated; {passed} passed, {failed} failed.")
+            output_lines.append(f" - {f}")
+        output_lines.append(f"\nSummary: {passed + failed} pairs validated; {passed} passed, {failed} failed.")
+        print("\n".join(output_lines))
+        Path("validate_new_data_results.txt").write_text("\n".join(output_lines), encoding="utf-8")
         return 1
-    print(f"All {passed} pairs validated successfully.")
+    msg = f"All {passed} pairs validated successfully."
+    print(msg)
+    Path("validate_new_data_results.txt").write_text(msg + "\n", encoding="utf-8")
     return 0
 
 
