@@ -131,9 +131,9 @@ class LineMapper:
             for oi in block_old:
                 ranked = sorted(
                     (
-                        self._hamming(old_hashes[oi], new_hashes[nj]) * 0.5
+                        self._hamming(old_hashes[oi], new_hashes[nj]) * 0.7
                         + self._hamming(self._simhash(" ".join(old_ctx_tokens[oi].elements())),
-                                        self._simhash(" ".join(new_ctx_tokens[nj].elements()))) * 0.5,
+                                        self._simhash(" ".join(new_ctx_tokens[nj].elements()))) * 0.3,
                         nj,
                     )
                     for nj in block_new
