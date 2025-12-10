@@ -120,7 +120,6 @@ class LineMapper:
             elif tag == "replace":
                 block_old = list(range(i1, i2))
                 block_new = list(range(j1, j2))
-                # Build similarity matrix
                 sim_matrix: List[List[float]] = []
                 for oi in block_old:
                     row = []
@@ -130,35 +129,27 @@ class LineMapper:
                         row.append(0.6 * content_sim + 0.4 * context_sim)
                     sim_matrix.append(row)
 
-                # Greedy maximum matching by picking best remaining pair above threshold
+                assignment = self._max_assignment(sim_matrix)
                 used_old = set()
                 used_new = set()
-                # Flatten scores with indices
-                flat_scores = [
-                    (score, oi, nj)
-                    for oi, nj in product(range(len(block_old)), range(len(block_new)))
-                    for score in [sim_matrix[oi][nj]]
-                ]
-                flat_scores.sort(key=lambda x: x[0], reverse=True)
-                for score, oi_idx, nj_idx in flat_scores:
+                for oi_idx, nj_idx in assignment:
+                    score = sim_matrix[oi_idx][nj_idx]
                     if score < 0.2:
-                        break
-                    if oi_idx in used_old or nj_idx in used_new:
                         continue
-                    used_old.add(oi_idx)
-                    used_new.add(nj_idx)
                     oi = block_old[oi_idx]
                     nj = block_new[nj_idx]
+                    used_old.add(oi)
+                    used_new.add(nj)
                     mapped_old.add(oi)
                     mapped_new.add(nj)
                     mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[nj] + 1))
 
                 for oi in block_old:
-                    if oi not in mapped_old:
+                    if oi not in used_old:
                         mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=None))
                         mapped_old.add(oi)
                 for nj in block_new:
-                    if nj not in mapped_new:
+                    if nj not in used_new:
                         mappings.append(LineMapping(old_line=None, new_line=keep_new[nj] + 1))
                         mapped_new.add(nj)
             elif tag == "delete":
