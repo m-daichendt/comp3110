@@ -35,6 +35,27 @@ class LineMapper:
         """Lightweight normalization: lowercase and collapse whitespace."""
         return " ".join(line.lower().split())
 
+    @staticmethod
+    def _simhash(text: str) -> int:
+        """Compute a simple 64-bit simhash from token hashes."""
+        if not text:
+            return 0
+        weights = [0] * 64
+        for token in text.split():
+            h = hash(token)
+            for i in range(64):
+                bit = (h >> i) & 1
+                weights[i] += 1 if bit else -1
+        result = 0
+        for i, w in enumerate(weights):
+            if w >= 0:
+                result |= (1 << i)
+        return result
+
+    @staticmethod
+    def _hamming(a: int, b: int) -> int:
+        return (a ^ b).bit_count()
+
     def map_lines(self) -> List[LineMapping]:
         """Return a list of line correspondences using a hybrid LHDiff-style approach."""
         mappings: List[LineMapping] = []
@@ -55,6 +76,9 @@ class LineMapper:
 
         # Step 2: build candidate mappings for unmatched blocks using similarity.
         proposals: List[tuple[float, int, int]] = []
+        # Precompute simhashes for candidate pruning (k=15).
+        old_hashes = [self._simhash(line) for line in self._norm_old]
+        new_hashes = [self._simhash(line) for line in self._norm_new]
         for tag, i1, i2, j1, j2 in opcodes:
             if tag == "equal":
                 continue
@@ -63,8 +87,16 @@ class LineMapper:
             if not block_old or not block_new:
                 continue
             for oi in block_old:
-                scores: List[tuple[float, int]] = []
+                # Build candidate set using simhash hamming distance.
+                candidates: List[tuple[int, int]] = []
                 for nj in block_new:
+                    dist = self._hamming(old_hashes[oi], new_hashes[nj])
+                    candidates.append((dist, nj))
+                candidates.sort(key=lambda x: x[0])
+                top_candidates = [nj for _, nj in candidates[:15]]
+
+                scores: List[tuple[float, int]] = []
+                for nj in top_candidates:
                     content_sim = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
                     context_sim = self._context_similarity(oi, nj)
                     combined = 0.6 * content_sim + 0.4 * context_sim
