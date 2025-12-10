@@ -120,37 +120,29 @@ class LineMapper:
             elif tag == "replace":
                 block_old = list(range(i1, i2))
                 block_new = list(range(j1, j2))
-                sim_matrix: List[List[float]] = []
+                # For each old line, pick the best-scoring new line (many-to-one allowed).
                 for oi_idx, oi in enumerate(block_old):
-                    row = []
+                    best_score = 0.0
+                    best_nj = None
                     for nj_idx, nj in enumerate(block_new):
                         content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
                         context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
                         pos_bonus = 0.2 if abs(oi_idx - nj_idx) <= 1 else 0.0
-                        row.append(0.7 * content_sim + 0.3 * context_sim + pos_bonus)
-                    sim_matrix.append(row)
-
-                assignment = self._max_assignment(sim_matrix)
-                used_old = set()
-                used_new = set()
-                for oi_idx, nj_idx in assignment:
-                    score = sim_matrix[oi_idx][nj_idx]
-                    if score < 0.1:
-                        continue
-                    oi = block_old[oi_idx]
-                    nj = block_new[nj_idx]
-                    used_old.add(oi)
-                    used_new.add(nj)
-                    mapped_old.add(oi)
-                    mapped_new.add(nj)
-                    mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[nj] + 1))
-
-                for oi in block_old:
-                    if oi not in used_old:
+                        base = 0.7 * content_sim + 0.3 * context_sim
+                        score = base + pos_bonus if base >= 0.05 else base
+                        if score > best_score:
+                            best_score = score
+                            best_nj = nj
+                    if best_score >= 0.05 and best_nj is not None:
+                        mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[best_nj] + 1))
+                        mapped_old.add(oi)
+                        mapped_new.add(best_nj)
+                    else:
                         mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=None))
                         mapped_old.add(oi)
+                # Any new lines not matched by above are inserts.
                 for nj in block_new:
-                    if nj not in used_new:
+                    if nj not in mapped_new:
                         mappings.append(LineMapping(old_line=None, new_line=keep_new[nj] + 1))
                         mapped_new.add(nj)
             elif tag == "delete":
