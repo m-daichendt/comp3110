@@ -123,8 +123,8 @@ class LineMapper:
 
     def _context_similarity(self, oi: int, nj: int) -> float:
         """Compute a rough context similarity using adjacent normalized lines."""
-        old_ctx = " ".join(self._norm_old[max(0, oi - 1): min(len(self._norm_old), oi + 2)])
-        new_ctx = " ".join(self._norm_new[max(0, nj - 1): min(len(self._norm_new), nj + 2)])
+        old_ctx = " ".join(self._norm_old[max(0, oi - 4): min(len(self._norm_old), oi + 5)])
+        new_ctx = " ".join(self._norm_new[max(0, nj - 4): min(len(self._norm_new), nj + 5)])
         if not old_ctx or not new_ctx:
             return 0.0
         return difflib.SequenceMatcher(None, old_ctx, new_ctx).ratio()
