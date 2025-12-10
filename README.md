@@ -22,15 +22,8 @@ Next steps (not yet done):
 
 - Latest validation log written to `validate_results.txt` by `validate_mappings.py` (current summary: 5/23 cases passed, 18 failed).
 
-## New Dataset Tooling
-- `generate_dataset.py`: build a 25-pair dataset (target ~500 mapped lines) from local files (default glob **/*.java) using the current LineMapper. Outputs `new_dataset.json`.
-- `validate_new_dataset.py`: validate `new_dataset.json` against the current LineMapper to spot regressions.
-
-## Running dataset generation against a GitHub repo
-- Example (popular repo Flask):
-  - `python generate_dataset.py --repo-url https://github.com/pallets/flask.git --glob "**/*.py" --pairs 25 --target-lines 500`
-  - This clones the repo to a temp dir, samples 25 file pairs (Python files), caps total mapped lines at 500, and writes `new_dataset.json`.
-  - After generation, run `python validate_new_dataset.py --dataset new_dataset.json` to validate against the current mapper.
-- Notes: requires network access and git available locally; the temporary clone is auto-cleaned.
+- `generate_dataset.py`: requires `--repo-url` (GitHub repo) and compares files across recent commits (default HEAD vs HEAD~1). Produces up to 25 pairs capped at 500 mapped lines and writes `new_test_data.json`. Use `--glob` to filter files (e.g., `"**/*.py"`), `--commits` to set commit depth, and `--copy-files` to save paired versions into `new-test-data/`.
+- `validate_new_dataset.py`: validates `new_test_data.json` against the current LineMapper to spot regressions.
 - `generate_dataset.py` now writes `new_test_data.json` by default and, with `--copy-files`, copies paired files into `new-test-data/` (old/new versions) for local inspection.
 - Note: when using `--repo-url`, the script now handles Windows read-only files on cleanup (`.git` packs) to avoid permission errors.
+- `generate_dataset.py` now requires `--repo-url` and compares files across recent commits (default HEAD vs HEAD~1) to build `new_test_data.json`; with `--copy-files`, paired versions are saved to `new-test-data/`.
