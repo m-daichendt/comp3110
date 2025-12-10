@@ -14,8 +14,11 @@ from __future__ import annotations
 
 import argparse
 import random
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import Iterable, List, Optional, Sequence
 
 from line_mapper import LineMapper, LineMapping
 
@@ -27,8 +30,8 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--root",
         type=Path,
-        default=Path("."),
-        help="Root directory to search for files (default: current directory)",
+        default=None,
+        help="Root directory to search for files; if omitted and --repo-url is provided, the repo will be cloned to a temp dir.",
     )
     parser.add_argument(
         "--glob",
@@ -59,7 +62,26 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         default=Path("new_dataset.json"),
         help="Path to write the generated dataset (default: new_dataset.json)",
     )
+    parser.add_argument(
+        "--repo-url",
+        help="Git repository URL (e.g., https://github.com/owner/repo.git). If set, the repo is cloned to a temp directory for dataset generation.",
+    )
+    parser.add_argument(
+        "--branch",
+        default=None,
+        help="Optional branch or commit to check out when cloning the repo.",
+    )
     return parser.parse_args(argv)
+
+
+def clone_repo(url: str, branch: Optional[str] = None) -> Path:
+    temp_dir = Path(tempfile.mkdtemp(prefix="dataset_repo_"))
+    cmd = ["git", "clone", "--depth", "1"]
+    if branch:
+        cmd.extend(["--branch", branch])
+    cmd.extend([url, str(temp_dir)])
+    subprocess.run(cmd, check=True)
+    return temp_dir
 
 
 def sample_pairs(files: Sequence[Path], pairs: int, seed: int) -> List[tuple[Path, Path]]:
@@ -109,13 +131,27 @@ def build_dataset(root: Path, glob: str, pairs: int, target_lines: int, seed: in
 
 def main(argv: Iterable[str] | None = None) -> int:
     args = parse_args(argv)
-    dataset = build_dataset(args.root, args.glob, args.pairs, args.target_lines, args.seed)
-    args.output.write_text(
-        __import__("json").dumps(dataset, indent=2),
-        encoding="utf-8",
-    )
-    print(f"Wrote {len(dataset)} pairs to {args.output} with total mappings capped at {args.target_lines}.")
-    return 0
+    root_dir: Optional[Path] = args.root
+    cloned_dir: Optional[Path] = None
+    try:
+        if args.repo_url:
+            cloned_dir = clone_repo(args.repo_url, args.branch)
+            root_dir = cloned_dir
+        if root_dir is None:
+            root_dir = Path(".")
+
+        dataset = build_dataset(root_dir, args.glob, args.pairs, args.target_lines, args.seed)
+        args.output.write_text(
+            __import__("json").dumps(dataset, indent=2),
+            encoding="utf-8",
+        )
+        print(
+            f"Wrote {len(dataset)} pairs to {args.output} with total mappings capped at {args.target_lines}."
+        )
+        return 0
+    finally:
+        if cloned_dir and cloned_dir.exists():
+            shutil.rmtree(cloned_dir)
 
 
 if __name__ == "__main__":  # pragma: no cover
