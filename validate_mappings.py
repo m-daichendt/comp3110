@@ -72,6 +72,7 @@ def main(argv: List[str] | None = None) -> int:
     data = json.loads(Path(args.json_path).read_text(encoding="utf-8"))
 
     all_failures: List[str] = []
+    output_lines: List[str] = []
     total_cases = 0
     failed_cases = 0
     for test in data:
@@ -82,14 +83,18 @@ def main(argv: List[str] | None = None) -> int:
             all_failures.extend(failures)
 
     if all_failures:
-        print("FAILED:")
+        output_lines.append("FAILED:")
         for failure in all_failures:
-            print(f" - {failure}")
+            output_lines.append(f" - {failure}")
         success_cases = total_cases - failed_cases
-        print(f"\nSummary: {success_cases}/{total_cases} cases passed; {failed_cases} failed.")
+        output_lines.append(f"\nSummary: {success_cases}/{total_cases} cases passed; {failed_cases} failed.")
+        print("\n".join(output_lines))
+        Path("validate_results.txt").write_text("\n".join(output_lines), encoding="utf-8")
         return 1
 
-    print(f"All {total_cases} test cases passed.")
+    output_lines.append(f"All {total_cases} test cases passed.")
+    print(output_lines[0])
+    Path("validate_results.txt").write_text("\n".join(output_lines), encoding="utf-8")
     return 0
 
 
