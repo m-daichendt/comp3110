@@ -13,6 +13,7 @@ from typing import Iterable, List, Sequence
 
 @dataclass(frozen=True)
 class LineMapping:
+    """Represents a single correspondence between an old and new line number."""
     old_line: int | None
     new_line: int | None
 
@@ -22,10 +23,12 @@ class LineMapping:
 
 class LineMapper:
     def __init__(self, old_lines: Sequence[str], new_lines: Sequence[str]):
+        """Store the sequences that will be diffed to derive line mappings."""
         self.old_lines = list(old_lines)
         self.new_lines = list(new_lines)
 
     def map_lines(self) -> List[LineMapping]:
+        """Return a list of line correspondences derived from difflib opcodes."""
         sm = difflib.SequenceMatcher(a=self.old_lines, b=self.new_lines, autojunk=False)
         mappings: List[LineMapping] = []
         for tag, i1, i2, j1, j2 in sm.get_opcodes():
@@ -48,6 +51,7 @@ class LineMapper:
         return mappings
 
     def pretty_mapping(self) -> str:
+        """Human-readable mapping like `4 -> 6` with `-` for inserts/deletes."""
         parts = []
         for m in self.map_lines():
             parts.append(f"{m.old_line if m.old_line is not None else '-'} -> {m.new_line if m.new_line is not None else '-'}")
@@ -55,6 +59,7 @@ class LineMapper:
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
+    """CLI argument parsing wrapper to keep `main` focused on work."""
     parser = argparse.ArgumentParser(description="Map line numbers from old file to new file using diffs.")
     parser.add_argument("old_file", help="Path to the old version of the file")
     parser.add_argument("new_file", help="Path to the new version of the file")
@@ -62,6 +67,7 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Iterable[str] | None = None) -> int:
+    """Entry point for the command-line tool."""
     args = parse_args(argv)
     with open(args.old_file, "r", encoding="utf-8") as f:
         old_lines = f.readlines()
