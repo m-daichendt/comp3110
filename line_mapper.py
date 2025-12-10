@@ -74,38 +74,30 @@ class LineMapper:
                     matched_old.add(oi)
                     matched_new.add(nj)
 
-        # Step 2: build candidate mappings for unmatched blocks using similarity.
+        # Step 2: build candidate mappings for all unmatched lines using simhash pruning.
         proposals: List[tuple[float, int, int]] = []
-        # Precompute simhashes for candidate pruning (k=15).
         old_hashes = [self._simhash(line) for line in self._norm_old]
         new_hashes = [self._simhash(line) for line in self._norm_new]
-        for tag, i1, i2, j1, j2 in opcodes:
-            if tag == "equal":
-                continue
-            block_old = [i for i in range(i1, i2) if i not in matched_old]
-            block_new = [j for j in range(j1, j2) if j not in matched_new]
-            if not block_old or not block_new:
-                continue
-            for oi in block_old:
-                # Build candidate set using simhash hamming distance.
-                candidates: List[tuple[int, int]] = []
-                for nj in block_new:
-                    dist = self._hamming(old_hashes[oi], new_hashes[nj])
-                    candidates.append((dist, nj))
-                candidates.sort(key=lambda x: x[0])
-                top_candidates = [nj for _, nj in candidates[:15]]
 
-                scores: List[tuple[float, int]] = []
-                for nj in top_candidates:
-                    content_sim = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
-                    context_sim = self._context_similarity(oi, nj)
-                    combined = 0.6 * content_sim + 0.4 * context_sim
-                    scores.append((combined, nj))
-                # take top-k candidates by combined score to mimic simhash pruning
-                scores.sort(key=lambda x: x[0], reverse=True)
-                for combined, nj in scores[:15]:
-                    if combined >= 0.3:
-                        proposals.append((combined, oi, nj))
+        unmatched_old = [i for i in range(len(self.old_lines)) if i not in matched_old]
+        unmatched_new = [j for j in range(len(self.new_lines)) if j not in matched_new]
+
+        for oi in unmatched_old:
+            # pick top-15 nearest neighbors by hamming distance
+            candidates = sorted(
+                ((self._hamming(old_hashes[oi], new_hashes[nj]), nj) for nj in unmatched_new),
+                key=lambda x: x[0],
+            )[:15]
+            scored: List[tuple[float, int]] = []
+            for _, nj in candidates:
+                content_sim = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
+                context_sim = self._context_similarity(oi, nj)
+                combined = 0.6 * content_sim + 0.4 * context_sim
+                scored.append((combined, nj))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            for combined, nj in scored:
+                if combined >= 0.2:
+                    proposals.append((combined, oi, nj))
 
         # Step 3: resolve conflicts by highest score first.
         proposals.sort(key=lambda x: x[0], reverse=True)
