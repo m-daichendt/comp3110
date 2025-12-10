@@ -27,3 +27,8 @@ Next steps (not yet done):
 - `generate_dataset.py` now writes `new_test_data.json` by default and, with `--copy-files`, copies paired files into `new-test-data/` (old/new versions) for local inspection.
 - Note: when using `--repo-url`, the script now handles Windows read-only files on cleanup (`.git` packs) to avoid permission errors.
 - `generate_dataset.py` now requires `--repo-url` and compares files across recent commits (default HEAD vs HEAD~1) to build `new_test_data.json`; with `--copy-files`, paired versions are saved to `new-test-data/`.
+
+## Example Usage - microsoft/VibeVoice:
+- `python generate_dataset.py --repo-url https://github.com/microsoft/VibeVoice.git --glob "**/*.py" --pairs 25 --target-lines 500 --commits 1 --copy-files`
+- This builds `new_test_data.json` and saves paired versions under `new-test-data/`.
+- Validate with `python validate_new_dataset.py --dataset new_test_data.json`.
