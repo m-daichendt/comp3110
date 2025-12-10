@@ -1,190 +1,5 @@
 [
   {
-    "name": "TEST16",
-    "file": "ArrayReference.java",
-    "versions": [
-      {
-        "number": 1,
-        "checked": true,
-        "locations": [
-          {
-            "orig": 165,
-            "new": 165
-          },
-          {
-            "orig": 166,
-            "new": 166
-          },
-          {
-            "orig": 167,
-            "new": 167
-          },
-          {
-            "orig": 168,
-            "new": 168
-          },
-          {
-            "orig": 169,
-            "new": 169
-          },
-          {
-            "orig": 170,
-            "new": 170
-          },
-          {
-            "orig": 171,
-            "new": 171
-          },
-          {
-            "orig": 173,
-            "new": 173
-          },
-          {
-            "orig": 174,
-            "new": 174
-          },
-          {
-            "orig": 175,
-            "new": 175
-          },
-          {
-            "orig": 176,
-            "new": 176
-          },
-          {
-            "orig": 177,
-            "new": 177
-          }
-        ],
-        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\ArrayReference_1.java"
-      },
-      {
-        "number": 2,
-        "checked": true,
-        "locations": [
-          {
-            "orig": 165,
-            "new": 163
-          },
-          {
-            "orig": 166,
-            "new": 164
-          },
-          {
-            "orig": 167,
-            "new": 165
-          },
-          {
-            "orig": 168,
-            "new": null
-          },
-          {
-            "orig": 169,
-            "new": 166
-          },
-          {
-            "orig": 170,
-            "new": 169
-          },
-          {
-            "orig": 171,
-            "new": null
-          },
-          {
-            "orig": 173,
-            "new": 172
-          },
-          {
-            "orig": 174,
-            "new": 173
-          },
-          {
-            "orig": 175,
-            "new": null
-          },
-          {
-            "orig": 176,
-            "new": 174
-          },
-          {
-            "orig": 177,
-            "new": 167
-          }
-        ],
-        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\ArrayReference_2.java"
-      }
-    ]
-  },
-  {
-    "name": "TEST3",
-    "file": "asdf.java",
-    "versions": [
-      {
-        "number": 1,
-        "checked": true,
-        "locations": [
-          {
-            "orig": 1,
-            "new": 1
-          },
-          {
-            "orig": 2,
-            "new": 2
-          },
-          {
-            "orig": 3,
-            "new": 3
-          },
-          {
-            "orig": 5,
-            "new": 5
-          },
-          {
-            "orig": 7,
-            "new": 7
-          },
-          {
-            "orig": 9,
-            "new": 9
-          }
-        ],
-        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\asdf_1.java"
-      },
-      {
-        "number": 2,
-        "checked": true,
-        "locations": [
-          {
-            "orig": 1,
-            "new": 1
-          },
-          {
-            "orig": 2,
-            "new": 2
-          },
-          {
-            "orig": 3,
-            "new": 3
-          },
-          {
-            "orig": 5,
-            "new": 5
-          },
-          {
-            "orig": 7,
-            "new": null
-          },
-          {
-            "orig": 9,
-            "new": null
-          }
-        ],
-        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\asdf_2.java"
-      }
-    ]
-  },
-  {
-    "name": "TEST18",
     "file": "ASTResolving.java",
     "versions": [
       {
@@ -348,7 +163,121 @@
     ]
   },
   {
-    "name": "TEST5",
+    "file": "ArrayReference.java",
+    "versions": [
+      {
+        "number": 1,
+        "checked": true,
+        "locations": [
+          {
+            "orig": 165,
+            "new": 165
+          },
+          {
+            "orig": 166,
+            "new": 166
+          },
+          {
+            "orig": 167,
+            "new": 167
+          },
+          {
+            "orig": 168,
+            "new": 168
+          },
+          {
+            "orig": 169,
+            "new": 169
+          },
+          {
+            "orig": 170,
+            "new": 170
+          },
+          {
+            "orig": 171,
+            "new": 171
+          },
+          {
+            "orig": 173,
+            "new": 173
+          },
+          {
+            "orig": 174,
+            "new": 174
+          },
+          {
+            "orig": 175,
+            "new": 175
+          },
+          {
+            "orig": 176,
+            "new": 176
+          },
+          {
+            "orig": 177,
+            "new": 177
+          }
+        ],
+        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\ArrayReference_1.java"
+      },
+      {
+        "number": 2,
+        "checked": true,
+        "locations": [
+          {
+            "orig": 165,
+            "new": 163
+          },
+          {
+            "orig": 166,
+            "new": 164
+          },
+          {
+            "orig": 167,
+            "new": 165
+          },
+          {
+            "orig": 168,
+            "new": null
+          },
+          {
+            "orig": 169,
+            "new": 166
+          },
+          {
+            "orig": 170,
+            "new": 169
+          },
+          {
+            "orig": 171,
+            "new": null
+          },
+          {
+            "orig": 173,
+            "new": 172
+          },
+          {
+            "orig": 174,
+            "new": 173
+          },
+          {
+            "orig": 175,
+            "new": null
+          },
+          {
+            "orig": 176,
+            "new": 174
+          },
+          {
+            "orig": 177,
+            "new": 167
+          }
+        ],
+        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\ArrayReference_2.java"
+      }
+    ]
+  },
+  {
     "file": "BaseTypes.java",
     "versions": [
       {
@@ -683,7 +612,6 @@
     ]
   },
   {
-    "name": "TEST8",
     "file": "BuildPathsPropertyPage.java",
     "versions": [
       {
@@ -807,7 +735,121 @@
     ]
   },
   {
-    "name": "TEST9",
+    "file": "CPListLabelProvider.java",
+    "versions": [
+      {
+        "number": 1,
+        "checked": true,
+        "locations": [
+          {
+            "orig": 145,
+            "new": 145
+          },
+          {
+            "orig": 146,
+            "new": 146
+          },
+          {
+            "orig": 147,
+            "new": 147
+          },
+          {
+            "orig": 148,
+            "new": 148
+          },
+          {
+            "orig": 149,
+            "new": 149
+          },
+          {
+            "orig": 150,
+            "new": 150
+          },
+          {
+            "orig": 151,
+            "new": 151
+          },
+          {
+            "orig": 152,
+            "new": 152
+          },
+          {
+            "orig": 153,
+            "new": 153
+          },
+          {
+            "orig": 154,
+            "new": 154
+          },
+          {
+            "orig": 155,
+            "new": 155
+          },
+          {
+            "orig": 156,
+            "new": 156
+          }
+        ],
+        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\CPListLabelProvider_1.java"
+      },
+      {
+        "number": 2,
+        "checked": true,
+        "locations": [
+          {
+            "orig": 145,
+            "new": 170
+          },
+          {
+            "orig": 146,
+            "new": 171
+          },
+          {
+            "orig": 147,
+            "new": 138
+          },
+          {
+            "orig": 148,
+            "new": 139
+          },
+          {
+            "orig": 149,
+            "new": null
+          },
+          {
+            "orig": 150,
+            "new": 140
+          },
+          {
+            "orig": 151,
+            "new": null
+          },
+          {
+            "orig": 152,
+            "new": null
+          },
+          {
+            "orig": 153,
+            "new": null
+          },
+          {
+            "orig": 154,
+            "new": 141
+          },
+          {
+            "orig": 155,
+            "new": null
+          },
+          {
+            "orig": 156,
+            "new": 142
+          }
+        ],
+        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\CPListLabelProvider_2.java"
+      }
+    ]
+  },
+  {
     "file": "CompilationUnitDocumentProvider.java",
     "versions": [
       {
@@ -963,123 +1005,6 @@
     ]
   },
   {
-    "name": "TEST6",
-    "file": "CPListLabelProvider.java",
-    "versions": [
-      {
-        "number": 1,
-        "checked": true,
-        "locations": [
-          {
-            "orig": 145,
-            "new": 145
-          },
-          {
-            "orig": 146,
-            "new": 146
-          },
-          {
-            "orig": 147,
-            "new": 147
-          },
-          {
-            "orig": 148,
-            "new": 148
-          },
-          {
-            "orig": 149,
-            "new": 149
-          },
-          {
-            "orig": 150,
-            "new": 150
-          },
-          {
-            "orig": 151,
-            "new": 151
-          },
-          {
-            "orig": 152,
-            "new": 152
-          },
-          {
-            "orig": 153,
-            "new": 153
-          },
-          {
-            "orig": 154,
-            "new": 154
-          },
-          {
-            "orig": 155,
-            "new": 155
-          },
-          {
-            "orig": 156,
-            "new": 156
-          }
-        ],
-        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\CPListLabelProvider_1.java"
-      },
-      {
-        "number": 2,
-        "checked": true,
-        "locations": [
-          {
-            "orig": 145,
-            "new": 170
-          },
-          {
-            "orig": 146,
-            "new": 171
-          },
-          {
-            "orig": 147,
-            "new": 138
-          },
-          {
-            "orig": 148,
-            "new": 139
-          },
-          {
-            "orig": 149,
-            "new": null
-          },
-          {
-            "orig": 150,
-            "new": 140
-          },
-          {
-            "orig": 151,
-            "new": null
-          },
-          {
-            "orig": 152,
-            "new": null
-          },
-          {
-            "orig": 153,
-            "new": null
-          },
-          {
-            "orig": 154,
-            "new": 141
-          },
-          {
-            "orig": 155,
-            "new": null
-          },
-          {
-            "orig": 156,
-            "new": 142
-          }
-        ],
-        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\CPListLabelProvider_2.java"
-      }
-    ]
-  },
-  {
-    "name": "TEST11",
     "file": "DeltaProcessor.java",
     "versions": [
       {
@@ -1195,7 +1120,6 @@
     ]
   },
   {
-    "name": "TEST19",
     "file": "DialogCustomize.java",
     "versions": [
       {
@@ -1279,7 +1203,6 @@
     ]
   },
   {
-    "name": "TEST5",
     "file": "DirectoryDialog.java",
     "versions": [
       {
@@ -1323,7 +1246,6 @@
     ]
   },
   {
-    "name": "TEST3",
     "file": "DoubleCache.java",
     "versions": [
       {
@@ -1439,7 +1361,6 @@
     ]
   },
   {
-    "name": "TEST13",
     "file": "FontData.java",
     "versions": [
       {
@@ -1571,7 +1492,6 @@
     ]
   },
   {
-    "name": "TEST14",
     "file": "GC.java",
     "versions": [
       {
@@ -1695,7 +1615,6 @@
     ]
   },
   {
-    "name": "TEST15",
     "file": "GC2.java",
     "versions": [
       {
@@ -1803,7 +1722,6 @@
     ]
   },
   {
-    "name": "TEST7",
     "file": "JavaCodeScanner.java",
     "versions": [
       {
@@ -1927,7 +1845,6 @@
     ]
   },
   {
-    "name": "TEST12",
     "file": "JavaModelManager.java",
     "versions": [
       {
@@ -1995,7 +1912,6 @@
     ]
   },
   {
-    "name": "TEST22",
     "file": "JavaPerspectiveFactory.java",
     "versions": [
       {
@@ -2079,7 +1995,6 @@
     ]
   },
   {
-    "name": "TEST17",
     "file": "PluginSearchScope.java",
     "versions": [
       {
@@ -2163,7 +2078,6 @@
     ]
   },
   {
-    "name": "TEST10",
     "file": "RefreshLocal.java",
     "versions": [
       {
@@ -2231,7 +2145,6 @@
     ]
   },
   {
-    "name": "TEST21",
     "file": "ResourceCompareInput.java",
     "versions": [
       {
@@ -2371,7 +2284,6 @@
     ]
   },
   {
-    "name": "TEST3",
     "file": "ResourceInfo.java",
     "versions": [
       {
@@ -2495,7 +2407,6 @@
     ]
   },
   {
-    "name": "TEST4",
     "file": "SaveManager.java",
     "versions": [
       {
@@ -2563,7 +2474,6 @@
     ]
   },
   {
-    "name": "TEST20",
     "file": "TabFolder.java",
     "versions": [
       {
@@ -2675,6 +2585,73 @@
           }
         ],
         "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\TabFolder_2.java"
+      }
+    ]
+  },
+  {
+    "file": "asdf.java",
+    "versions": [
+      {
+        "number": 1,
+        "checked": true,
+        "locations": [
+          {
+            "orig": 1,
+            "new": 1
+          },
+          {
+            "orig": 2,
+            "new": 2
+          },
+          {
+            "orig": 3,
+            "new": 3
+          },
+          {
+            "orig": 5,
+            "new": 5
+          },
+          {
+            "orig": 7,
+            "new": 7
+          },
+          {
+            "orig": 9,
+            "new": 9
+          }
+        ],
+        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\asdf_1.java"
+      },
+      {
+        "number": 2,
+        "checked": true,
+        "locations": [
+          {
+            "orig": 1,
+            "new": 1
+          },
+          {
+            "orig": 2,
+            "new": 2
+          },
+          {
+            "orig": 3,
+            "new": 3
+          },
+          {
+            "orig": 5,
+            "new": 5
+          },
+          {
+            "orig": 7,
+            "new": null
+          },
+          {
+            "orig": 9,
+            "new": null
+          }
+        ],
+        "java_path": "C:\\UWindsor\\Software Eng\\Project\\comp3110\\test-data\\asdf_2.java"
       }
     ]
   }
