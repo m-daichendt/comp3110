@@ -113,33 +113,36 @@ class LineMapper:
                 matched_old.add(oi)
                 matched_new.add(nj)
 
-        # Step 2: candidate mappings for unmatched lines using simhash pruning (content+context).
+        # Step 2: candidate mappings for unmatched lines within each diff block.
         proposals: List[tuple[float, int, int]] = []
-        unmatched_old = [i for i in range(len(self._norm_old)) if i not in matched_old]
-        unmatched_new = [j for j in range(len(self._norm_new)) if j not in matched_new]
-
-        for oi in unmatched_old:
-            # rank all unmatched new lines by combined hamming distance of content and context simhash
-            ranked = sorted(
-                (
-                    self._hamming(old_hashes[oi], new_hashes[nj])
-                    + self._hamming(self._simhash(" ".join(old_ctx_tokens[oi].elements())),
-                                    self._simhash(" ".join(new_ctx_tokens[nj].elements()))),
-                    nj,
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == "equal":
+                continue
+            block_old = [i for i in range(i1, i2) if i not in matched_old]
+            block_new = [j for j in range(j1, j2) if j not in matched_new]
+            if not block_old or not block_new:
+                continue
+            for oi in block_old:
+                ranked = sorted(
+                    (
+                        self._hamming(old_hashes[oi], new_hashes[nj])
+                        + self._hamming(self._simhash(" ".join(old_ctx_tokens[oi].elements())),
+                                        self._simhash(" ".join(new_ctx_tokens[nj].elements()))),
+                        nj,
+                    )
+                    for nj in block_new
                 )
-                for nj in unmatched_new
-            )
-            top_candidates = [nj for _, nj in ranked[:15]]
-            scored: List[tuple[float, int]] = []
-            for nj in top_candidates:
-                content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
-                context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
-                combined = 0.6 * content_sim + 0.4 * context_sim
-                scored.append((combined, nj))
-            scored.sort(key=lambda x: x[0], reverse=True)
-            for combined, nj in scored:
-                if combined >= 0.5:
-                    proposals.append((combined, oi, nj))
+                top_candidates = [nj for _, nj in ranked[:15]]
+                scored: List[tuple[float, int]] = []
+                for nj in top_candidates:
+                    content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
+                    context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
+                    combined = 0.6 * content_sim + 0.4 * context_sim
+                    scored.append((combined, nj))
+                scored.sort(key=lambda x: x[0], reverse=True)
+                for combined, nj in scored:
+                    if combined >= 0.5:
+                        proposals.append((combined, oi, nj))
 
         # Step 3: resolve conflicts greedily by score.
         proposals.sort(key=lambda x: x[0], reverse=True)
