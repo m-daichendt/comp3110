@@ -27,30 +27,28 @@ def mapping_for_files(old_path: Path, new_path: Path) -> Dict[int, Optional[int]
 
 
 def validate_test_case(test: dict) -> List[str]:
-    """Validate all versions in a single test case, returning failure messages."""
-    versions = test["versions"]
-    base = next((v for v in versions if v["number"] == 1 and v["java_path"]), None)
-    if base is None:
-        return [f"{test['name']}: missing base version 1 file"]
-
-    base_path = Path(base["java_path"])
+    """Validate adjacent version mappings in a single test case."""
+    versions = sorted(test["versions"], key=lambda v: v["number"])
     failures: List[str] = []
-    for version in versions:
-        if version["number"] == 1:
+
+    for prev, current in zip(versions, versions[1:]):
+        if not prev["java_path"]:
+            failures.append(f"{test['name']} v{prev['number']}: missing java file")
             continue
-        if not version["java_path"]:
-            failures.append(f"{test['name']} v{version['number']}: missing java file")
+        if not current["java_path"]:
+            failures.append(f"{test['name']} v{current['number']}: missing java file")
             continue
 
-        target_path = Path(version["java_path"])
-        actual_map = mapping_for_files(base_path, target_path)
-        for loc in version["locations"]:
+        prev_path = Path(prev["java_path"])
+        current_path = Path(current["java_path"])
+        actual_map = mapping_for_files(prev_path, current_path)
+        for loc in current["locations"]:
             expected_new = loc["new"]
             orig_line = loc["orig"]
             actual_new = actual_map.get(orig_line)
             if actual_new != expected_new:
                 failures.append(
-                    f"{test['name']} v{version['number']} orig {orig_line}: "
+                    f"{test['name']} v{prev['number']} -> v{current['number']} orig {orig_line}: "
                     f"expected {expected_new}, got {actual_new}"
                 )
     return failures
