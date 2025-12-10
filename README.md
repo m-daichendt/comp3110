@@ -21,3 +21,7 @@ Next steps (not yet done):
 - Status: failing with many mismatches; BaseTypes/asdf align but numerous larger cases (e.g., ASTResolving, PluginSearchScope) still differ from expected mappings.
 
 - Latest validation log written to `validate_results.txt` by `validate_mappings.py` (current summary: 5/23 cases passed, 18 failed).
+
+## New Dataset Tooling
+- `generate_dataset.py`: build a 25-pair dataset (target ~500 mapped lines) from local files (default glob **/*.java) using the current LineMapper. Outputs `new_dataset.json`.
+- `validate_new_dataset.py`: validate `new_dataset.json` against the current LineMapper to spot regressions.
