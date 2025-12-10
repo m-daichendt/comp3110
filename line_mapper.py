@@ -85,10 +85,10 @@ class LineMapper:
             mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
 
         # Step 4: mark remaining unmatched as insert/delete.
-        for oi in unmatched_old:
+        for oi in range(len(self.old_lines)):
             if oi not in matched_old:
                 mappings.append(LineMapping(old_line=oi + 1, new_line=None))
-        for nj in unmatched_new:
+        for nj in range(len(self.new_lines)):
             if nj not in matched_new:
                 mappings.append(LineMapping(old_line=None, new_line=nj + 1))
 
