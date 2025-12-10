@@ -159,6 +159,8 @@ def main(argv: Iterable[str] | None = None) -> int:
             root_dir = Path(".")
 
         dataset = build_dataset(root_dir, args.glob, args.pairs, args.target_lines, args.seed)
+        if args.copy_files:
+            copy_pair_files(dataset, Path("new-test-data"))
         args.output.write_text(
             __import__("json").dumps(dataset, indent=2),
             encoding="utf-8",

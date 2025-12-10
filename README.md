@@ -32,3 +32,4 @@ Next steps (not yet done):
   - This clones the repo to a temp dir, samples 25 file pairs (Python files), caps total mapped lines at 500, and writes `new_dataset.json`.
   - After generation, run `python validate_new_dataset.py --dataset new_dataset.json` to validate against the current mapper.
 - Notes: requires network access and git available locally; the temporary clone is auto-cleaned.
+- `generate_dataset.py` now writes `new_test_data.json` by default and, with `--copy-files`, copies paired files into `new-test-data/` (old/new versions) for local inspection.
