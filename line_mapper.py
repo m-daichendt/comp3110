@@ -104,68 +104,59 @@ class LineMapper:
         old_hashes = [self._simhash(" ".join(self._tokens(t))) for t in norm_old]
         new_hashes = [self._simhash(" ".join(self._tokens(t))) for t in norm_new]
 
-        # Step 1: anchor unchanged lines using diff on normalized text.
         sm = difflib.SequenceMatcher(a=norm_old, b=norm_new, autojunk=False)
-        matched_old = set()
-        matched_new = set()
+        mapped_old = set()
+        mapped_new = set()
         opcodes = sm.get_opcodes()
         for tag, i1, i2, j1, j2 in opcodes:
-            if tag != "equal":
-                continue
-            for k in range(i2 - i1):
-                oi = i1 + k
-                nj = j1 + k
-                mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[nj] + 1))
-                matched_old.add(oi)
-                matched_new.add(nj)
-
-        # Step 2: candidate mappings for unmatched lines within each diff block.
-        proposals: List[tuple[float, int, int]] = []
-        for tag, i1, i2, j1, j2 in opcodes:
             if tag == "equal":
-                continue
-            block_old = [i for i in range(i1, i2) if i not in matched_old]
-            block_new = [j for j in range(j1, j2) if j not in matched_new]
-            if not block_old or not block_new:
-                continue
-            for oi in block_old:
-                ranked = sorted(
-                    (
-                        self._hamming(old_hashes[oi], new_hashes[nj]) * 0.7
-                        + self._hamming(self._simhash(" ".join(old_ctx_tokens[oi].elements())),
-                                        self._simhash(" ".join(new_ctx_tokens[nj].elements()))) * 0.3,
-                        nj,
-                    )
-                    for nj in block_new
-                )
-                top_candidates = [nj for _, nj in ranked[:15]]
-                scored: List[tuple[float, int]] = []
-                for nj in top_candidates:
-                    content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
-                    context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
-                    combined = 0.5 * content_sim + 0.5 * context_sim
-                scored.append((combined, nj))
-            scored.sort(key=lambda x: x[0], reverse=True)
-            for combined, nj in scored:
-                if combined >= 0.2:
-                        proposals.append((combined, oi, nj))
-
-        # Step 3: resolve conflicts greedily by score.
-        proposals.sort(key=lambda x: x[0], reverse=True)
-        for score, oi, nj in proposals:
-            if oi in matched_old or nj in matched_new:
-                continue
-            matched_old.add(oi)
-            matched_new.add(nj)
-            mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[nj] + 1))
-
-        # Step 4: mark remaining unmatched as insert/delete.
-        for oi in range(len(norm_old)):
-            if oi not in matched_old:
-                mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=None))
-        for nj in range(len(norm_new)):
-            if nj not in matched_new:
-                mappings.append(LineMapping(old_line=None, new_line=keep_new[nj] + 1))
+                for k in range(i2 - i1):
+                    oi = i1 + k
+                    nj = j1 + k
+                    mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[nj] + 1))
+                    mapped_old.add(oi)
+                    mapped_new.add(nj)
+            elif tag == "replace":
+                block_old = list(range(i1, i2))
+                block_new = list(range(j1, j2))
+                scores: List[tuple[float, int, int]] = []
+                for oi in block_old:
+                    for nj in block_new:
+                        content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
+                        context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
+                        combined = 0.6 * content_sim + 0.4 * context_sim
+                        scores.append((combined, oi, nj))
+                scores.sort(key=lambda x: x[0], reverse=True)
+                used_old = set()
+                used_new = set()
+                for score, oi, nj in scores:
+                    if oi in used_old or nj in used_new:
+                        continue
+                    used_old.add(oi)
+                    used_new.add(nj)
+                    mapped_old.add(oi)
+                    mapped_new.add(nj)
+                    mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[nj] + 1))
+                for oi in block_old:
+                    if oi not in used_old:
+                        mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=None))
+                        mapped_old.add(oi)
+                for nj in block_new:
+                    if nj not in used_new:
+                        mappings.append(LineMapping(old_line=None, new_line=keep_new[nj] + 1))
+                        mapped_new.add(nj)
+            elif tag == "delete":
+                for oi in range(i1, i2):
+                    if oi not in mapped_old:
+                        mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=None))
+                        mapped_old.add(oi)
+            elif tag == "insert":
+                for nj in range(j1, j2):
+                    if nj not in mapped_new:
+                        mappings.append(LineMapping(old_line=None, new_line=keep_new[nj] + 1))
+                        mapped_new.add(nj)
+            else:  # pragma: no cover
+                raise ValueError(f"Unexpected tag: {tag}")
 
         mappings.sort(key=lambda m: (m.old_line is None, m.old_line if m.old_line is not None else float("inf"),
                                      m.new_line if m.new_line is not None else float("inf")))
