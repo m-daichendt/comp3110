@@ -192,7 +192,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     try:
         cloned_dir = clone_repo(args.repo_url, args.branch)
         commits = recent_commits(cloned_dir, args.commits)
-        files = list_files(cloned_dir)
+        files = list_files(cloned_dir, args.glob)
         dataset = build_pairs(cloned_dir, commits, files, args.pairs, args.target_lines, args.seed)
         if not dataset:
             raise SystemExit("No pairs generated (check commit depth and file availability).")
