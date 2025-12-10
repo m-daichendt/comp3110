@@ -81,9 +81,15 @@ class LineMapper:
         """Return a list of line correspondences using a closer LHDiff-style approach."""
         mappings: List[LineMapping] = []
 
-        # Precompute normalized tokens, contexts, and simhashes.
-        old_tokens = [Counter(self._tokens(t)) for t in self._norm_old]
-        new_tokens = [Counter(self._tokens(t)) for t in self._norm_new]
+        # Keep only non-empty lines for mapping; line numbers reference original files.
+        keep_old = [i for i, l in enumerate(self.old_lines) if l.strip()]
+        keep_new = [j for j, l in enumerate(self.new_lines) if l.strip()]
+        norm_old = [self._normalize(self.old_lines[i]) for i in keep_old]
+        norm_new = [self._normalize(self.new_lines[j]) for j in keep_new]
+
+        # Precompute tokens, contexts, and simhashes on kept lines.
+        old_tokens = [Counter(self._tokens(t)) for t in norm_old]
+        new_tokens = [Counter(self._tokens(t)) for t in norm_new]
 
         def ctx_tokens(tokens_list: List[Counter], idx: int) -> Counter:
             start = max(0, idx - 4)
@@ -95,11 +101,11 @@ class LineMapper:
 
         old_ctx_tokens = [ctx_tokens(old_tokens, i) for i in range(len(old_tokens))]
         new_ctx_tokens = [ctx_tokens(new_tokens, j) for j in range(len(new_tokens))]
-        old_hashes = [self._simhash(" ".join(self._tokens(t))) for t in self._norm_old]
-        new_hashes = [self._simhash(" ".join(self._tokens(t))) for t in self._norm_new]
+        old_hashes = [self._simhash(" ".join(self._tokens(t))) for t in norm_old]
+        new_hashes = [self._simhash(" ".join(self._tokens(t))) for t in norm_new]
 
         # Step 1: anchor unchanged lines using diff on normalized text.
-        sm = difflib.SequenceMatcher(a=self._norm_old, b=self._norm_new, autojunk=False)
+        sm = difflib.SequenceMatcher(a=norm_old, b=norm_new, autojunk=False)
         matched_old = set()
         matched_new = set()
         opcodes = sm.get_opcodes()
@@ -109,7 +115,7 @@ class LineMapper:
             for k in range(i2 - i1):
                 oi = i1 + k
                 nj = j1 + k
-                mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+                mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[nj] + 1))
                 matched_old.add(oi)
                 matched_new.add(nj)
 
@@ -151,17 +157,15 @@ class LineMapper:
                 continue
             matched_old.add(oi)
             matched_new.add(nj)
-            mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+            mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[nj] + 1))
 
         # Step 4: mark remaining unmatched as insert/delete.
-        all_old = set(range(len(self._norm_old)))
-        all_new = set(range(len(self._norm_new)))
-        for oi in all_old:
+        for oi in range(len(norm_old)):
             if oi not in matched_old:
-                mappings.append(LineMapping(old_line=oi + 1, new_line=None))
-        for nj in all_new:
+                mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=None))
+        for nj in range(len(norm_new)):
             if nj not in matched_new:
-                mappings.append(LineMapping(old_line=None, new_line=nj + 1))
+                mappings.append(LineMapping(old_line=None, new_line=keep_new[nj] + 1))
 
         mappings.sort(key=lambda m: (m.old_line is None, m.old_line if m.old_line is not None else float("inf"),
                                      m.new_line if m.new_line is not None else float("inf")))
