@@ -26,9 +26,11 @@ class LineMapper:
         """Store the sequences that will be diffed to derive line mappings."""
         self.old_lines = list(old_lines)
         self.new_lines = list(new_lines)
-        # Normalized copies used for similarity/diff decisions.
-        self._norm_old = [self._normalize(l) for l in self.old_lines]
-        self._norm_new = [self._normalize(l) for l in self.new_lines]
+        # Keep only non-blank lines for mapping to avoid noise from empty lines.
+        self._old_keep = [i for i, l in enumerate(self.old_lines) if l.strip()]
+        self._new_keep = [i for i, l in enumerate(self.new_lines) if l.strip()]
+        self._norm_old = [self._normalize(self.old_lines[i]) for i in self._old_keep]
+        self._norm_new = [self._normalize(self.new_lines[i]) for i in self._new_keep]
 
     @staticmethod
     def _normalize(line: str) -> str:
@@ -70,7 +72,7 @@ class LineMapper:
                 for k in range(i2 - i1):
                     oi = i1 + k
                     nj = j1 + k
-                    mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+                    mappings.append(LineMapping(old_line=self._old_keep[oi] + 1, new_line=self._new_keep[nj] + 1))
                     matched_old.add(oi)
                     matched_new.add(nj)
 
@@ -79,8 +81,8 @@ class LineMapper:
         old_hashes = [self._simhash(line) for line in self._norm_old]
         new_hashes = [self._simhash(line) for line in self._norm_new]
 
-        unmatched_old = [i for i in range(len(self.old_lines)) if i not in matched_old]
-        unmatched_new = [j for j in range(len(self.new_lines)) if j not in matched_new]
+        unmatched_old = [i for i in range(len(self._norm_old)) if i not in matched_old]
+        unmatched_new = [j for j in range(len(self._norm_new)) if j not in matched_new]
 
         for oi in unmatched_old:
             # pick top-15 nearest neighbors by hamming distance
@@ -106,15 +108,15 @@ class LineMapper:
                 continue
             matched_old.add(oi)
             matched_new.add(nj)
-            mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+            mappings.append(LineMapping(old_line=self._old_keep[oi] + 1, new_line=self._new_keep[nj] + 1))
 
         # Step 4: mark remaining unmatched as insert/delete.
-        for oi in range(len(self.old_lines)):
+        for oi in unmatched_old:
             if oi not in matched_old:
-                mappings.append(LineMapping(old_line=oi + 1, new_line=None))
-        for nj in range(len(self.new_lines)):
+                mappings.append(LineMapping(old_line=self._old_keep[oi] + 1, new_line=None))
+        for nj in unmatched_new:
             if nj not in matched_new:
-                mappings.append(LineMapping(old_line=None, new_line=nj + 1))
+                mappings.append(LineMapping(old_line=None, new_line=self._new_keep[nj] + 1))
 
         # keep deterministic ordering by old/new line numbers
         mappings.sort(key=lambda m: (m.old_line is None, m.old_line if m.old_line is not None else float("inf"),
