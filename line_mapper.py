@@ -133,7 +133,7 @@ class LineMapper:
                         if score > best_score:
                             best_score = score
                             best_nj = nj
-                    if best_score >= 0.05 and best_nj is not None:
+                    if best_nj is not None:
                         mappings.append(LineMapping(old_line=keep_old[oi] + 1, new_line=keep_new[best_nj] + 1))
                         mapped_old.add(oi)
                         mapped_new.add(best_nj)
