@@ -59,8 +59,13 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("new_dataset.json"),
-        help="Path to write the generated dataset (default: new_dataset.json)",
+        default=Path("new_test_data.json"),
+        help="Path to write the generated dataset (default: new_test_data.json)",
+    )
+    parser.add_argument(
+        "--copy-files",
+        action="store_true",
+        help="If set, copy paired files into a local new-test-data directory mirroring test-data structure.",
     )
     parser.add_argument(
         "--repo-url",
@@ -127,6 +132,19 @@ def build_dataset(root: Path, glob: str, pairs: int, target_lines: int, seed: in
             }
         )
     return dataset
+
+
+def copy_pair_files(pairs: List[dict], dest_root: Path) -> None:
+    dest_root.mkdir(parents=True, exist_ok=True)
+    for entry in pairs:
+        old_src = Path(entry["old_file"])
+        new_src = Path(entry["new_file"])
+        old_dest = dest_root / f"{old_src.stem}_old{old_src.suffix}"
+        new_dest = dest_root / f"{new_src.stem}_new{new_src.suffix}"
+        old_dest.write_bytes(old_src.read_bytes())
+        new_dest.write_bytes(new_src.read_bytes())
+        entry["old_file"] = str(old_dest)
+        entry["new_file"] = str(new_dest)
 
 
 def main(argv: Iterable[str] | None = None) -> int:
