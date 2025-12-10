@@ -4,7 +4,7 @@ Convert XML test data into a Python/JSON-friendly structure.
 
 Scans `test-data` for XML descriptors, matches them to their versioned
 `.java` files, normalizes mappings (using `None` for `NEW=-1`), and writes
-out a consolidated JSON file.
+out a consolidated JSON file at the project root.
 """
 
 from __future__ import annotations
@@ -55,9 +55,9 @@ def parse_test_xml(xml_path: Path) -> Dict[str, Any]:
         )
 
     return {
-        "name": root.attrib["NAME"],
         "file": root.attrib["FILE"],
-        "versions": versions,
+        # ensure versions are sorted numerically
+        "versions": sorted(versions, key=lambda v: v["number"]),
     }
 
 
@@ -68,7 +68,8 @@ def collect_tests() -> List[Dict[str, Any]]:
         if xml_path.name.endswith("~"):  # skip backup files
             continue
         tests.append(parse_test_xml(xml_path))
-    return tests
+    # sort by target file name for deterministic output
+    return sorted(tests, key=lambda t: t["file"])
 
 
 def main() -> int:
