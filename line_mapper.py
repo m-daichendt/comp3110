@@ -78,8 +78,25 @@ class LineMapper:
         return (a ^ b).bit_count()
 
     def map_lines(self) -> List[LineMapping]:
-        """Return a list of line correspondences using a hybrid LHDiff-style approach."""
+        """Return a list of line correspondences using a closer LHDiff-style approach."""
         mappings: List[LineMapping] = []
+
+        # Precompute normalized tokens, contexts, and simhashes.
+        old_tokens = [Counter(self._tokens(t)) for t in self._norm_old]
+        new_tokens = [Counter(self._tokens(t)) for t in self._norm_new]
+
+        def ctx_tokens(tokens_list: List[Counter], idx: int) -> Counter:
+            start = max(0, idx - 4)
+            end = min(len(tokens_list), idx + 5)
+            combined = Counter()
+            for c in tokens_list[start:end]:
+                combined.update(c)
+            return combined
+
+        old_ctx_tokens = [ctx_tokens(old_tokens, i) for i in range(len(old_tokens))]
+        new_ctx_tokens = [ctx_tokens(new_tokens, j) for j in range(len(new_tokens))]
+        old_hashes = [self._simhash(" ".join(self._tokens(t))) for t in self._norm_old]
+        new_hashes = [self._simhash(" ".join(self._tokens(t))) for t in self._norm_new]
 
         # Step 1: anchor unchanged lines using diff on normalized text.
         sm = difflib.SequenceMatcher(a=self._norm_old, b=self._norm_new, autojunk=False)
@@ -87,54 +104,44 @@ class LineMapper:
         matched_new = set()
         opcodes = sm.get_opcodes()
         for tag, i1, i2, j1, j2 in opcodes:
-            if tag == "equal":
-                for k in range(i2 - i1):
-                    oi = i1 + k
-                    nj = j1 + k
-                    mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
-                    matched_old.add(oi)
-                    matched_new.add(nj)
+            if tag != "equal":
+                continue
+            for k in range(i2 - i1):
+                oi = i1 + k
+                nj = j1 + k
+                mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+                matched_old.add(oi)
+                matched_new.add(nj)
 
-        # Precompute token counters and context strings.
-        old_tokens = [Counter(self._tokens(t)) for t in self._norm_old]
-        new_tokens = [Counter(self._tokens(t)) for t in self._norm_new]
-
-        def ctx_string(norm_lines: List[str], idx: int) -> str:
-            return " ".join(norm_lines[max(0, idx - 4): min(len(norm_lines), idx + 5)])
-
-        old_ctx_tokens = [Counter(self._tokens(ctx_string(self._norm_old, i))) for i in range(len(self._norm_old))]
-        new_ctx_tokens = [Counter(self._tokens(ctx_string(self._norm_new, j))) for j in range(len(self._norm_new))]
-
-        # Step 2: build candidate mappings for all unmatched lines using simhash pruning.
+        # Step 2: candidate mappings for unmatched lines using simhash pruning (content+context).
         proposals: List[tuple[float, int, int]] = []
-        old_hashes = [self._simhash(line) for line in self._norm_old]
-        new_hashes = [self._simhash(line) for line in self._norm_new]
-
         unmatched_old = [i for i in range(len(self._norm_old)) if i not in matched_old]
         unmatched_new = [j for j in range(len(self._norm_new)) if j not in matched_new]
 
         for oi in unmatched_old:
-            # pick top-15 nearest neighbors by combined simhash distance (content + context)
-            candidates = sorted(
+            # rank all unmatched new lines by combined hamming distance of content and context simhash
+            ranked = sorted(
                 (
                     self._hamming(old_hashes[oi], new_hashes[nj])
-                    + self._hamming(self._simhash(" ".join(old_tokens[oi])), self._simhash(" ".join(new_tokens[nj]))),
+                    + self._hamming(self._simhash(" ".join(old_ctx_tokens[oi].elements())),
+                                    self._simhash(" ".join(new_ctx_tokens[nj].elements()))),
                     nj,
                 )
                 for nj in unmatched_new
-            )[:15]
+            )
+            top_candidates = [nj for _, nj in ranked[:15]]
             scored: List[tuple[float, int]] = []
-            for _, nj in candidates:
+            for nj in top_candidates:
                 content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
                 context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
                 combined = 0.6 * content_sim + 0.4 * context_sim
                 scored.append((combined, nj))
             scored.sort(key=lambda x: x[0], reverse=True)
             for combined, nj in scored:
-                if combined >= 0.6:
+                if combined >= 0.5:
                     proposals.append((combined, oi, nj))
 
-        # Step 3: resolve conflicts by highest score first.
+        # Step 3: resolve conflicts greedily by score.
         proposals.sort(key=lambda x: x[0], reverse=True)
         for score, oi, nj in proposals:
             if oi in matched_old or nj in matched_new:
@@ -151,7 +158,6 @@ class LineMapper:
             if nj not in matched_new:
                 mappings.append(LineMapping(old_line=None, new_line=nj + 1))
 
-        # keep deterministic ordering by old/new line numbers
         mappings.sort(key=lambda m: (m.old_line is None, m.old_line if m.old_line is not None else float("inf"),
                                      m.new_line if m.new_line is not None else float("inf")))
         return mappings
