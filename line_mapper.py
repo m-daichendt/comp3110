@@ -43,33 +43,37 @@ class LineMapper:
         sm = difflib.SequenceMatcher(a=self._norm_old, b=self._norm_new, autojunk=False)
         matched_old = set()
         matched_new = set()
-        for tag, i1, i2, j1, j2 in sm.get_opcodes():
-            if tag != "equal":
-                continue
-            for k in range(i2 - i1):
-                oi = i1 + k
-                nj = j1 + k
-                mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
-                matched_old.add(oi)
-                matched_new.add(nj)
+        opcodes = sm.get_opcodes()
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == "equal":
+                for k in range(i2 - i1):
+                    oi = i1 + k
+                    nj = j1 + k
+                    mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+                    matched_old.add(oi)
+                    matched_new.add(nj)
 
-        # Step 2: build candidate mappings for unmatched lines using similarity.
-        unmatched_old = [i for i in range(len(self.old_lines)) if i not in matched_old]
-        unmatched_new = [j for j in range(len(self.new_lines)) if j not in matched_new]
-
+        # Step 2: build candidate mappings for unmatched blocks using similarity.
         proposals: List[tuple[float, int, int]] = []
-        for oi in unmatched_old:
-            scores: List[tuple[float, int]] = []
-            for nj in unmatched_new:
-                content_sim = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
-                context_sim = self._context_similarity(oi, nj)
-                combined = 0.6 * content_sim + 0.4 * context_sim
-                scores.append((combined, nj))
-            # take top-k candidates by combined score to mimic simhash pruning
-            scores.sort(key=lambda x: x[0], reverse=True)
-            for combined, nj in scores[:15]:
-                if combined >= 0.3:
-                    proposals.append((combined, oi, nj))
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == "equal":
+                continue
+            block_old = [i for i in range(i1, i2) if i not in matched_old]
+            block_new = [j for j in range(j1, j2) if j not in matched_new]
+            if not block_old or not block_new:
+                continue
+            for oi in block_old:
+                scores: List[tuple[float, int]] = []
+                for nj in block_new:
+                    content_sim = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
+                    context_sim = self._context_similarity(oi, nj)
+                    combined = 0.6 * content_sim + 0.4 * context_sim
+                    scores.append((combined, nj))
+                # take top-k candidates by combined score to mimic simhash pruning
+                scores.sort(key=lambda x: x[0], reverse=True)
+                for combined, nj in scores[:15]:
+                    if combined >= 0.3:
+                        proposals.append((combined, oi, nj))
 
         # Step 3: resolve conflicts by highest score first.
         proposals.sort(key=lambda x: x[0], reverse=True)
