@@ -36,10 +36,16 @@ class LineMapper:
                 for k in range(i2 - i1):
                     mappings.append(LineMapping(old_line=i1 + k + 1, new_line=j1 + k + 1))
             elif tag == "replace":
-                for k in range(i1, i2):
-                    mappings.append(LineMapping(old_line=k + 1, new_line=None))
-                for k in range(j1, j2):
-                    mappings.append(LineMapping(old_line=None, new_line=k + 1))
+                old_len = i2 - i1
+                new_len = j2 - j1
+                paired = min(old_len, new_len)
+                # For replacements, pair lines positionally; remainder become deletes/inserts.
+                for k in range(paired):
+                    mappings.append(LineMapping(old_line=i1 + k + 1, new_line=j1 + k + 1))
+                for k in range(paired, old_len):
+                    mappings.append(LineMapping(old_line=i1 + k + 1, new_line=None))
+                for k in range(paired, new_len):
+                    mappings.append(LineMapping(old_line=None, new_line=j1 + k + 1))
             elif tag == "delete":
                 for k in range(i1, i2):
                     mappings.append(LineMapping(old_line=k + 1, new_line=None))
