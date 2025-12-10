@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 
 ROOT = Path(__file__).parent
 DATA_DIR = ROOT / "test-data"
-OUTPUT = DATA_DIR / "test_data.json"
+OUTPUT = ROOT / "test_data.json"
 
 
 def parse_locations(version_el: ET.Element) -> List[Dict[str, Optional[int]]]:
