@@ -1,4 +1,4 @@
-﻿FAILED:
+FAILED:
  - ASTResolving.java v1 -> v2 orig 114: expected 112, got 111
  - ASTResolving.java v1 -> v2 orig 117: expected 118, got None
  - ASTResolving.java v1 -> v2 orig 118: expected 119, got None
@@ -118,3 +118,5 @@
  - TabFolder.java v1 -> v2 orig 250: expected None, got 246
  - TabFolder.java v1 -> v2 orig 251: expected 246, got None
  - asdf.java v1 -> v2 orig 7: expected None, got 7
+
+Summary: 5/23 cases passed; 18 failed.
