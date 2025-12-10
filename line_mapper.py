@@ -36,59 +36,70 @@ class LineMapper:
         return " ".join(line.lower().split())
 
     def map_lines(self) -> List[LineMapping]:
-        """Return a list of line correspondences derived from difflib opcodes."""
-        sm = difflib.SequenceMatcher(a=self._norm_old, b=self._norm_new, autojunk=False)
+        """Return a list of line correspondences using a hybrid LHDiff-style approach."""
         mappings: List[LineMapping] = []
+
+        # Step 1: anchor unchanged lines using diff on normalized text.
+        sm = difflib.SequenceMatcher(a=self._norm_old, b=self._norm_new, autojunk=False)
+        matched_old = set()
+        matched_new = set()
         for tag, i1, i2, j1, j2 in sm.get_opcodes():
-            if tag == "equal":
-                for k in range(i2 - i1):
-                    mappings.append(LineMapping(old_line=i1 + k + 1, new_line=j1 + k + 1))
-            elif tag == "replace":
-                # Use similarity to pair lines in replace blocks; unmatched are delete/insert.
-                pairings = self._greedy_pair(i1, i2, j1, j2)
-                mapped_old = set()
-                mapped_new = set()
-                for oi, nj in pairings:
-                    mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
-                    mapped_old.add(oi)
-                    mapped_new.add(nj)
-                for oi in range(i1, i2):
-                    if oi not in mapped_old:
-                        mappings.append(LineMapping(old_line=oi + 1, new_line=None))
-                for nj in range(j1, j2):
-                    if nj not in mapped_new:
-                        mappings.append(LineMapping(old_line=None, new_line=nj + 1))
-            elif tag == "delete":
-                for k in range(i1, i2):
-                    mappings.append(LineMapping(old_line=k + 1, new_line=None))
-            elif tag == "insert":
-                for k in range(j1, j2):
-                    mappings.append(LineMapping(old_line=None, new_line=k + 1))
-            else:  # pragma: no cover
-                raise ValueError(f"Unexpected tag: {tag}")
+            if tag != "equal":
+                continue
+            for k in range(i2 - i1):
+                oi = i1 + k
+                nj = j1 + k
+                mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+                matched_old.add(oi)
+                matched_new.add(nj)
+
+        # Step 2: build candidate mappings for unmatched lines using similarity.
+        unmatched_old = [i for i in range(len(self.old_lines)) if i not in matched_old]
+        unmatched_new = [j for j in range(len(self.new_lines)) if j not in matched_new]
+
+        proposals: List[tuple[float, int, int]] = []
+        for oi in unmatched_old:
+            scores: List[tuple[float, int]] = []
+            for nj in unmatched_new:
+                content_sim = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
+                context_sim = self._context_similarity(oi, nj)
+                combined = 0.6 * content_sim + 0.4 * context_sim
+                scores.append((combined, nj))
+            # take top-k candidates by combined score to mimic simhash pruning
+            scores.sort(key=lambda x: x[0], reverse=True)
+            for combined, nj in scores[:15]:
+                if combined >= 0.3:
+                    proposals.append((combined, oi, nj))
+
+        # Step 3: resolve conflicts by highest score first.
+        proposals.sort(key=lambda x: x[0], reverse=True)
+        for score, oi, nj in proposals:
+            if oi in matched_old or nj in matched_new:
+                continue
+            matched_old.add(oi)
+            matched_new.add(nj)
+            mappings.append(LineMapping(old_line=oi + 1, new_line=nj + 1))
+
+        # Step 4: mark remaining unmatched as insert/delete.
+        for oi in unmatched_old:
+            if oi not in matched_old:
+                mappings.append(LineMapping(old_line=oi + 1, new_line=None))
+        for nj in unmatched_new:
+            if nj not in matched_new:
+                mappings.append(LineMapping(old_line=None, new_line=nj + 1))
+
+        # keep deterministic ordering by old/new line numbers
+        mappings.sort(key=lambda m: (m.old_line is None, m.old_line if m.old_line is not None else float("inf"),
+                                     m.new_line if m.new_line is not None else float("inf")))
         return mappings
 
-    def _greedy_pair(self, i1: int, i2: int, j1: int, j2: int) -> List[tuple[int, int]]:
-        """Pair lines in replace blocks using similarity, highest first."""
-        pairs: List[tuple[int, int, float]] = []
-        for oi in range(i1, i2):
-            for nj in range(j1, j2):
-                score = difflib.SequenceMatcher(None, self._norm_old[oi], self._norm_new[nj]).ratio()
-                pairs.append((oi, nj, score))
-        # Sort by descending score
-        pairs.sort(key=lambda x: x[2], reverse=True)
-        used_old = set()
-        used_new = set()
-        chosen: List[tuple[int, int]] = []
-        for oi, nj, score in pairs:
-            if score < 0.4:  # ignore weak matches
-                break
-            if oi in used_old or nj in used_new:
-                continue
-            used_old.add(oi)
-            used_new.add(nj)
-            chosen.append((oi, nj))
-        return chosen
+    def _context_similarity(self, oi: int, nj: int) -> float:
+        """Compute a rough context similarity using adjacent normalized lines."""
+        old_ctx = " ".join(self._norm_old[max(0, oi - 1): min(len(self._norm_old), oi + 2)])
+        new_ctx = " ".join(self._norm_new[max(0, nj - 1): min(len(self._norm_new), nj + 2)])
+        if not old_ctx or not new_ctx:
+            return 0.0
+        return difflib.SequenceMatcher(None, old_ctx, new_ctx).ratio()
 
     def pretty_mapping(self) -> str:
         """Human-readable mapping like `4 -> 6` with `-` for inserts/deletes."""
