@@ -47,6 +47,11 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         help="Number of recent commit pairs to compare per file (default: 1, i.e., HEAD vs HEAD~1).",
     )
     parser.add_argument(
+        "--glob",
+        default="**/*.py",
+        help="Glob pattern (fnmatch-style on repo paths) to select files (default: **/*.py).",
+    )
+    parser.add_argument(
         "--pairs",
         type=int,
         default=25,
@@ -106,9 +111,11 @@ def recent_commits(repo_dir: Path, count: int) -> List[str]:
     return commits
 
 
-def list_files(repo_dir: Path) -> List[str]:
+def list_files(repo_dir: Path, pattern: str) -> List[str]:
     files = run_git(repo_dir, ["ls-tree", "-r", "--name-only", "HEAD"]).splitlines()
-    return files
+    # Use fnmatch on forward-slash paths
+    import fnmatch
+    return [f for f in files if fnmatch.fnmatch(f, pattern)]
 
 
 def file_content_at(repo_dir: Path, commit: str, path: str) -> Optional[str]:
