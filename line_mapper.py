@@ -169,6 +169,64 @@ class LineMapper:
                                      m.new_line if m.new_line is not None else float("inf")))
         return mappings
 
+    @staticmethod
+    def _max_assignment(sim_matrix: List[List[float]]) -> List[tuple[int, int]]:
+        """Hungarian algorithm for maximum weight matching on a rectangular matrix."""
+        if not sim_matrix or not sim_matrix[0]:
+            return []
+        n_rows = len(sim_matrix)
+        n_cols = len(sim_matrix[0])
+        n = max(n_rows, n_cols)
+        max_val = max(max(row) for row in sim_matrix) if sim_matrix else 0
+        # Build square cost matrix for minimization.
+        cost = [[max_val - (sim_matrix[i][j] if i < n_rows and j < n_cols else 0) for j in range(n)] for i in range(n)]
+        u = [0] * (n + 1)
+        v = [0] * (n + 1)
+        p = [0] * (n + 1)
+        way = [0] * (n + 1)
+        INF = float("inf")
+        for i in range(1, n + 1):
+            p[0] = i
+            j0 = 0
+            minv = [INF] * (n + 1)
+            used = [False] * (n + 1)
+            while True:
+                used[j0] = True
+                i0 = p[j0]
+                delta = INF
+                j1 = 0
+                for j in range(1, n + 1):
+                    if used[j]:
+                        continue
+                    cur = cost[i0 - 1][j - 1] - u[i0] - v[j]
+                    if cur < minv[j]:
+                        minv[j] = cur
+                        way[j] = j0
+                    if minv[j] < delta:
+                        delta = minv[j]
+                        j1 = j
+                for j in range(n + 1):
+                    if used[j]:
+                        u[p[j]] += delta
+                        v[j] -= delta
+                    else:
+                        minv[j] -= delta
+                j0 = j1
+                if p[j0] == 0:
+                    break
+            while True:
+                j1 = way[j0]
+                p[j0] = p[j1]
+                j0 = j1
+                if j0 == 0:
+                    break
+        # Extract assignment
+        assignment = []
+        for j in range(1, n + 1):
+            if p[j] and p[j] - 1 < n_rows and j - 1 < n_cols:
+                assignment.append((p[j] - 1, j - 1))
+        return assignment
+
     def _context_similarity(self, oi: int, nj: int) -> float:
         """Compute a rough context similarity using adjacent normalized lines."""
         # Deprecated in favor of token-based cosine; retained for compatibility.
