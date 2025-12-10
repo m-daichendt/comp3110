@@ -131,9 +131,9 @@ class LineMapper:
             for oi in block_old:
                 ranked = sorted(
                     (
-                        self._hamming(old_hashes[oi], new_hashes[nj])
+                        self._hamming(old_hashes[oi], new_hashes[nj]) * 0.6
                         + self._hamming(self._simhash(" ".join(old_ctx_tokens[oi].elements())),
-                                        self._simhash(" ".join(new_ctx_tokens[nj].elements()))),
+                                        self._simhash(" ".join(new_ctx_tokens[nj].elements()))) * 0.4,
                         nj,
                     )
                     for nj in block_new
@@ -143,11 +143,11 @@ class LineMapper:
                 for nj in top_candidates:
                     content_sim = self._tf_cosine(old_tokens[oi], new_tokens[nj])
                     context_sim = self._tf_cosine(old_ctx_tokens[oi], new_ctx_tokens[nj])
-                    combined = 0.6 * content_sim + 0.4 * context_sim
-                    scored.append((combined, nj))
-                scored.sort(key=lambda x: x[0], reverse=True)
-                for combined, nj in scored:
-                    if combined >= 0.5:
+                    combined = 0.7 * content_sim + 0.3 * context_sim
+                scored.append((combined, nj))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            for combined, nj in scored:
+                if combined >= 0.3:
                         proposals.append((combined, oi, nj))
 
         # Step 3: resolve conflicts greedily by score.
