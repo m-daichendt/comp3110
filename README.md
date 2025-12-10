@@ -33,3 +33,4 @@ Next steps (not yet done):
   - After generation, run `python validate_new_dataset.py --dataset new_dataset.json` to validate against the current mapper.
 - Notes: requires network access and git available locally; the temporary clone is auto-cleaned.
 - `generate_dataset.py` now writes `new_test_data.json` by default and, with `--copy-files`, copies paired files into `new-test-data/` (old/new versions) for local inspection.
+- Note: when using `--repo-url`, the script now handles Windows read-only files on cleanup (`.git` packs) to avoid permission errors.
