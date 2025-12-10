@@ -33,10 +33,10 @@ def validate_test_case(test: dict) -> List[str]:
 
     for prev, current in zip(versions, versions[1:]):
         if not prev["java_path"]:
-            failures.append(f"{test['name']} v{prev['number']}: missing java file")
+            failures.append(f"{test.get('file', '<unknown>')} v{prev['number']}: missing java file")
             continue
         if not current["java_path"]:
-            failures.append(f"{test['name']} v{current['number']}: missing java file")
+            failures.append(f"{test.get('file', '<unknown>')} v{current['number']}: missing java file")
             continue
 
         prev_path = Path(prev["java_path"])
@@ -48,7 +48,7 @@ def validate_test_case(test: dict) -> List[str]:
             actual_new = actual_map.get(orig_line)
             if actual_new != expected_new:
                 failures.append(
-                    f"{test['name']} v{prev['number']} -> v{current['number']} orig {orig_line}: "
+                    f"{test.get('file', '<unknown>')} v{prev['number']} -> v{current['number']} orig {orig_line}: "
                     f"expected {expected_new}, got {actual_new}"
                 )
     return failures
