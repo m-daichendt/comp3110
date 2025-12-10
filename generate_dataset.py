@@ -13,8 +13,10 @@ Constraints:
 from __future__ import annotations
 
 import argparse
+import os
 import random
 import shutil
+import stat
 import subprocess
 import tempfile
 from pathlib import Path
@@ -87,6 +89,12 @@ def clone_repo(url: str, branch: Optional[str] = None) -> Path:
     cmd.extend([url, str(temp_dir)])
     subprocess.run(cmd, check=True)
     return temp_dir
+
+
+def _on_rm_error(func, path, exc_info):
+    # Make read-only files writable then retry removal.
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 
 def sample_pairs(files: Sequence[Path], pairs: int, seed: int) -> List[tuple[Path, Path]]:
@@ -171,7 +179,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         return 0
     finally:
         if cloned_dir and cloned_dir.exists():
-            shutil.rmtree(cloned_dir)
+            shutil.rmtree(cloned_dir, onerror=_on_rm_error)
 
 
 if __name__ == "__main__":  # pragma: no cover
