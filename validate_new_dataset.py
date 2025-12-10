@@ -14,12 +14,12 @@ from line_mapper import LineMapper
 
 
 def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Validate new_dataset.json against line_mapper.py")
+    parser = argparse.ArgumentParser(description="Validate new_test_data.json against line_mapper.py")
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=Path("new_dataset.json"),
-        help="Path to the generated dataset JSON (default: new_dataset.json)",
+        default=Path("new_test_data.json"),
+        help="Path to the generated dataset JSON (default: new_test_data.json)",
     )
     return parser.parse_args(argv)
 
