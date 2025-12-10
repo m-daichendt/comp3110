@@ -131,7 +131,7 @@ class LineMapper:
                 scored.append((combined, nj))
             scored.sort(key=lambda x: x[0], reverse=True)
             for combined, nj in scored:
-                if combined >= 0.5:
+                if combined >= 0.6:
                     proposals.append((combined, oi, nj))
 
         # Step 3: resolve conflicts by highest score first.
